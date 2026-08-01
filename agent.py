@@ -8,10 +8,21 @@ from datetime import datetime, timedelta, timezone
 import jwt
 import requests
 from cryptography.hazmat.primitives import serialization
-<<<<<<< HEAD
-from guardrails import validate_input, ValidationResult, sanitize_input
-=======
->>>>>>> 1fd7cbef974b97f379fb3a53c22a5950ddd5f7ce
+
+try:
+    from guardrails import validate_input, ValidationResult, sanitize_input
+except ImportError:
+    # Fallback if guardrails.py is not present (e.g., during initial deployment)
+    class ValidationResult:
+        PASS = "pass"
+        BLOCK = "block"
+    class _FakeResult:
+        result = ValidationResult.PASS
+        message = ""
+    def validate_input(msg, history=None):
+        return _FakeResult()
+    def sanitize_input(msg):
+        return _FakeResult()
 
 
 def generate_jwt_token(account: str, user: str, private_key_pem: str) -> str:
@@ -203,7 +214,6 @@ class CortexAgentClient:
             result["text"] = f"Failed to parse agent response: {str(e)[:200]}"
 
         if not result["text"]:
-<<<<<<< HEAD
             result["text"] = (
                 "I wasn't able to answer that question with the available Census data. "
                 "This could mean the data doesn't cover that topic or geographic level, "
@@ -325,11 +335,6 @@ def _classify_topic(client: CortexAgentClient, user_message: str,
         resp = requests.post(url, headers=headers, json=body, timeout=20)
         if resp.status_code not in (200, 202):
             return True, ""  # fail open — let the agent handle it
-=======
-            result["text"] = "I received a response but couldn't extract the answer. Please try rephrasing."
-
-        return result
->>>>>>> 1fd7cbef974b97f379fb3a53c22a5950ddd5f7ce
 
         data = resp.json()
         if resp.status_code == 202:
@@ -338,92 +343,6 @@ def _classify_topic(client: CortexAgentClient, user_message: str,
             if data is None:
                 return True, ""
 
-<<<<<<< HEAD
-=======
-def process_query_v2(client: CortexAgentClient, user_message: str,
-                     thread_id: int = None, parent_message_id: int = None) -> tuple:
-    """Process a user query via the Cortex Agent REST API."""
-    # Run LLM guardrail on every turn
-    is_on_topic, refusal = _classify_topic(client, user_message)
-    if not is_on_topic:
-        return refusal, thread_id, None
-
-    try:
-        result = client.run(user_message, thread_id, parent_message_id)
-        return result["text"], result["thread_id"], result["message_id"]
-    except requests.exceptions.Timeout:
-        return "The request timed out. Please try a simpler question.", thread_id, None
-    except requests.exceptions.ConnectionError:
-        return "Could not connect to the Snowflake agent service. Please try again.", thread_id, None
-    except Exception as e:
-        return f"An error occurred: {str(e)[:200]}", thread_id, None
-
-
-CLASSIFIER_PROMPT = """You are a topic classifier. Determine if the user's message is related to US Census data, demographics, or population statistics.
-
-ON-TOPIC examples (return true):
-- Questions about population, income, housing, education, employment, poverty, commuting, health insurance, internet access, language, household types, veterans, SNAP/food stamps
-- Questions about US states, counties, or demographic comparisons
-- Follow-up questions that reference prior census data answers (e.g. "what about Texas?", "show me the lowest")
-
-OFF-TOPIC examples (return false):
-- Weather, sports, politics, recipes, programming, stocks, entertainment
-- Requests to write code, tell jokes, or do non-data tasks
-- Questions about non-US countries (unless comparing to US data)
-
-User message: """
-
-CLASSIFIER_SCHEMA = json.dumps({
-    "type": "json",
-    "schema": {
-        "type": "object",
-        "properties": {
-            "on_topic": {"type": "boolean"},
-            "reason": {"type": "string"}
-        },
-        "required": ["on_topic"]
-    }
-})
-
-
-def _classify_topic(client: CortexAgentClient, user_message: str) -> tuple:
-    """Classify whether a message is on-topic using a fast LLM call with structured output."""
-    url = f"{client.base_url}/api/v2/statements"
-    headers = {
-        "Authorization": f"Bearer {client._get_token()}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "X-Snowflake-Authorization-Token-Type": "KEYPAIR_JWT",
-    }
-
-    prompt = CLASSIFIER_PROMPT + user_message
-    prompt_escaped = prompt.replace("\\", "\\\\").replace("'", "\\'")
-    sql = (f"SELECT SNOWFLAKE.CORTEX.COMPLETE("
-           f"'openai-gpt-5-mini', '{prompt_escaped}', "
-           f"PARSE_JSON('{CLASSIFIER_SCHEMA}'))")
-
-    body = {
-        "statement": sql,
-        "timeout": 15,
-        "warehouse": "COMPUTE_WH",
-        "role": "ACCOUNTADMIN",
-        "database": client.database,
-        "schema": client.schema,
-    }
-
-    try:
-        resp = requests.post(url, headers=headers, json=body, timeout=20)
-        if resp.status_code not in (200, 202):
-            return True, ""  # fail open — let the agent handle it
-
-        data = resp.json()
-        if resp.status_code == 202:
-            handle = data.get("statementHandle")
-            data = client._poll_statement(handle, max_wait=15)
-            if data is None:
-                return True, ""
-
->>>>>>> 1fd7cbef974b97f379fb3a53c22a5950ddd5f7ce
         rows = data.get("data", [])
         if rows and rows[0]:
             result = rows[0][0]

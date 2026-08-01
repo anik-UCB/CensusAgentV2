@@ -2,6 +2,7 @@
 # Co-authored with CoCo
 
 import streamlit as st
+from typing import Optional
 from agent import CortexAgentClient, process_query_v2, get_jwt_debug_info
 
 st.set_page_config(page_title="US Census Chat Agent", page_icon="📊", layout="centered")
@@ -9,7 +10,7 @@ st.title("US Census Data Chat Agent")
 st.caption("Ask questions about US demographics, income, housing, education, and employment (ACS 2020)")
 
 
-def _check_secrets() -> str | None:
+def _check_secrets() -> Optional[str]:
     """Validate that required secrets are configured. Returns error message or None."""
     try:
         secrets = st.secrets["snowflake"]

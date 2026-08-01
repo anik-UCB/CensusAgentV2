@@ -1,5 +1,16 @@
 # Written Reflection — US Census Data Chat Agent
 
+## Accessing the Applications
+
+| Version | URL | Auth |
+|---|---|---|
+| **v1** (Hand-Rolled) | [censusagentv1.streamlit.app](https://censusagentv1.streamlit.app/) | Snowflake connector (key-pair or password) |
+| **v2** (Cortex Agent) | [censusagentv2.streamlit.app](https://censusagentv2.streamlit.app/) | JWT key-pair via SQL API |
+
+Both apps require Snowflake credentials configured in Streamlit secrets. No login is needed to access the UI — authentication is handled server-side against the Snowflake account (`xlbpipm-il76509`).
+
+---
+
 ## Version 1: Hand-Rolled Agent (CORTEX.COMPLETE)
 
 v1 is a manually orchestrated LLM agent that generates SQL queries from natural language using `SNOWFLAKE.CORTEX.COMPLETE`.
